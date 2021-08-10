@@ -4,9 +4,9 @@ import 'package:get/get.dart';
 import 'package:kirinuki/color.dart';
 import 'package:kirinuki/start_page/start_page_controller.dart';
 import 'package:kirinuki/tools/build_widget.dart';
-import 'package:kirinuki/tools/network.dart';
-import 'package:kirinuki/tools/youtube_downloader.dart';
+import 'package:kirinuki/webview/youtube_download_page.dart';
 import 'package:kirinuki/widget/bouncing_icon_button.dart';
+
 import '../dimen.dart';
 
 class StartPage extends StatelessWidget {
@@ -56,8 +56,6 @@ class StartPage extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 30),
           margin: EdgeInsets.only(bottom: 30),
           child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-            Obx(() =>
-                getImage(controller.videoInfo.value?.thumbnails.mediumResUrl)),
             buildH1Text("동영상 주소로 시작"),
             SizedBox(height: 15),
             Stack(
@@ -76,7 +74,13 @@ class StartPage extends StatelessWidget {
                         style: TextStyle(fontSize: h1),
                         decoration: InputDecoration(border: InputBorder.none),
                         onSubmitted: (link) {
-                          controller.getMetaData(link);
+                          final videoCode =
+                              Uri.parse(link).queryParameters['v'];
+                          if (videoCode != null) {
+                            Get.to(() => YoutubeDownloadPage(videoCode));
+                          }else{
+
+                          }
                         },
                       ),
                     ),

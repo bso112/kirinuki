@@ -24,7 +24,10 @@ dependencies:
   flutter:
     sdk: flutter
   get:
-  youtube_explode_dart:
+  webview_flutter:
+  flutter_inappwebview: ^5.3.2
+  path_provider:
+  gallery_saver: ^2.1.2
 
 
   # The following adds the Cupertino Icons font to your application.
