@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class YoutubeDownloadPage extends StatefulWidget {
@@ -22,6 +25,7 @@ class YoutubeDownloadPageState extends State<YoutubeDownloadPage> {
   @override
   void initState() {
     currentUrl = _youtubeDownloaderUrl + widget.videoCode;
+    requestPermission();
     super.initState();
   }
 
@@ -36,11 +40,7 @@ class YoutubeDownloadPageState extends State<YoutubeDownloadPage> {
             final url = request.url;
             if (url.startsWith('https://redirector.googlevideo.com/') ||
                 Uri.parse(url).queryParameters.containsKey('file')) {
-              downloadVideo(url);
-              //새창 열기
-              setState(() {
-                currentUrl = url;
-              });
+              downloadFile(url);
             }
 
             return NavigationDecision.prevent;
@@ -48,6 +48,13 @@ class YoutubeDownloadPageState extends State<YoutubeDownloadPage> {
         ),
       ),
     );
+  }
+
+  void requestPermission() async {
+    var status = await Permission.storage.status;
+    if (status.isDenied) {
+      await Permission.storage.request();
+    }
   }
 
   void showSnackbar(BuildContext context) {
@@ -70,5 +77,21 @@ class YoutubeDownloadPageState extends State<YoutubeDownloadPage> {
     GallerySaver.saveVideo(url, albumName: _albumName).then((success) {
       print("video save $success");
     });
+  }
+
+  Future downloadFile(String url) async {
+    Dio dio = Dio();
+
+    try {
+      var dir = await getExternalStorageDirectory();
+      print(dir!.path);
+      await dio.download(url, "${dir.path}/gura.mp4",
+          onReceiveProgress: (rec, total) {
+        print("Rec: $rec , Total: $total");
+      });
+    } catch (e) {
+      print(e);
+    }
+    print("Download completed");
   }
 }
