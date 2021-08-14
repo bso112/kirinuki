@@ -17,6 +17,7 @@ class EditPage extends StatefulWidget {
 
 class _EditPageState extends State<EditPage> {
   late VideoPlayerController _videoPlayerController;
+  late EditPageController controller = Get.find<EditPageController>();
 
   @override
   void initState() {
@@ -31,11 +32,29 @@ class _EditPageState extends State<EditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<EditPageController>();
     return Scaffold(
       body: SafeArea(
         child: Container(
-          child: Column(children: [
+          child: Column(children: [_buildVideoPlayer()]),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPlayer() {
+    _videoPlayerController.position.then((_){
+      controller.videoPosition.value =
+          (_videoPlayerController.value.position.inMilliseconds /
+              _videoPlayerController.value.duration.inMilliseconds);
+    });
+
+
+    final iconColor = Colors.white;
+
+    return Column(
+      children: [
+        Stack(
+          children: [
             FutureBuilder(
               future: _videoPlayerController.initialize(),
               builder: (context, snapshot) {
@@ -49,30 +68,59 @@ class _EditPageState extends State<EditPage> {
                 );
               },
             ),
-            Row(children: [
-              Obx(
-                    () =>
-                    Bouncing(
-                        child: controller.isVideoPlaying.value
-                            ? Icon(Icons.stop)
-                            : Icon(Icons.play_arrow),
-                        onTap: () {
-                          final onControlEnd = (value) {
-                            controller.isVideoPlaying.value =
-                                _videoPlayerController.value.isPlaying;
-                          };
-
-                          if (_videoPlayerController.value.isPlaying) {
-                            _videoPlayerController.pause().then(onControlEnd);
-                          } else {
-                            _videoPlayerController.play().then(onControlEnd);
-                          }
-                        }),
-              ),
-            ])
-          ]),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child:
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Bouncing(
+                    child: Icon(Icons.skip_previous, color: iconColor),
+                    onTap: () {
+                      final newPosition =
+                          _videoPlayerController.value.position.inSeconds -
+                              controller.skipInSecond.value;
+                      _videoPlayerController
+                          .seekTo(Duration(seconds: newPosition));
+                      print("newPos" + newPosition.toString());
+                    }),
+                Obx(
+                  () => Bouncing(
+                      child: controller.isVideoPlaying.value
+                          ? Icon(Icons.stop, color: iconColor)
+                          : Icon(Icons.play_arrow, color: iconColor),
+                      onTap: () {
+                        final onControlEnd = (value) {
+                          controller.isVideoPlaying.value =
+                              _videoPlayerController.value.isPlaying;
+                        };
+                        if (_videoPlayerController.value.isPlaying) {
+                          _videoPlayerController.pause().then(onControlEnd);
+                        } else {
+                          _videoPlayerController.play().then(onControlEnd);
+                        }
+                      }),
+                ),
+                Bouncing(
+                    child: Icon(Icons.skip_next, color: iconColor),
+                    onTap: () {
+                      final newPosition =
+                          _videoPlayerController.value.position.inSeconds +
+                              controller.skipInSecond.value;
+                      _videoPlayerController
+                          .seekTo(Duration(seconds: newPosition));
+                      print("newPos" + newPosition.toString());
+                    }),
+              ]),
+            )
+          ],
         ),
-      ),
+        Obx(() => LinearProgressIndicator(
+              value: controller.videoPosition.value,
+              backgroundColor: Colors.red.withOpacity(0.3),
+              color: Colors.red,
+            ))
+      ],
     );
   }
 }
