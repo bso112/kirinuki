@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:kirinuki/tools/network.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:get/get.dart';
 
 class YoutubeDownloadPage extends StatefulWidget {
-  String videoCode;
-
-  YoutubeDownloadPage(this.videoCode);
 
   @override
   State<StatefulWidget> createState() => YoutubeDownloadPageState();
@@ -22,13 +20,14 @@ class YoutubeDownloadPageState extends State<YoutubeDownloadPage> {
 
   @override
   void initState() {
-    currentUrl = _youtubeDownloaderUrl + widget.videoCode;
+    currentUrl = _youtubeDownloaderUrl + Get.arguments['videoCode'];
     requestPermission();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       body: SafeArea(
         child: WebView(

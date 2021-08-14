@@ -1,6 +1,6 @@
 import 'package:image_picker/image_picker.dart';
 
-abstract class MediaUtil {
+class MediaUtil {
   late final _picker = ImagePicker();
 
   Future<XFile?> getVideo() async {

@@ -2,13 +2,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kirinuki/color.dart';
-import 'package:kirinuki/start_page/start_page_controller.dart';
+import 'package:kirinuki/presentation/start_page/start_page_controller.dart';
+import 'package:kirinuki/route/app_pages.dart';
 import 'package:kirinuki/tools/build_widget.dart';
 import 'package:kirinuki/tools/media_util.dart';
-import 'package:kirinuki/webview/youtube_download_page.dart';
 import 'package:kirinuki/widget/bouncing_icon_button.dart';
 
-import '../dimen.dart';
+import '../../dimen.dart';
 
 class StartPage extends GetView<StartPageController> {
   final boundary = 400.0;
@@ -36,7 +36,9 @@ class StartPage extends GetView<StartPageController> {
                 Bouncing(
                     child: Icon(Icons.folder_open, size: 80),
                     onTap: () async {
-                      Get.find<MediaUtil>().getVideo();
+                      Get.find<MediaUtil>().getVideo().then((file) {
+                        Get.toNamed(Routes.EDIT, arguments: file);
+                      });
                     })
               ],
             ),
@@ -76,7 +78,8 @@ class StartPage extends GetView<StartPageController> {
                           final videoCode =
                               Uri.parse(link).queryParameters['v'];
                           if (videoCode != null) {
-                            Get.to(() => YoutubeDownloadPage(videoCode));
+                            Get.toNamed(Routes.DOWNLOAD,
+                                arguments: {"videoCode": videoCode});
                           }
                         },
                       ),
