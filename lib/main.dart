@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:get/get.dart';
 import 'package:kirinuki/TestPage.dart';
+import 'package:kirinuki/start_page/start_page.dart';
 import 'package:kirinuki/webview/youtube_download_page.dart';
-import 'package:kirinuki/webview/youtube_download_page2.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() async {
@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: YoutubeDownloadPage2('7oXcnkD2HII'),
+      home: StartPage(),
     );
   }
 }

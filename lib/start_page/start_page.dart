@@ -4,12 +4,13 @@ import 'package:get/get.dart';
 import 'package:kirinuki/color.dart';
 import 'package:kirinuki/start_page/start_page_controller.dart';
 import 'package:kirinuki/tools/build_widget.dart';
+import 'package:kirinuki/tools/media_util.dart';
 import 'package:kirinuki/webview/youtube_download_page.dart';
 import 'package:kirinuki/widget/bouncing_icon_button.dart';
 
 import '../dimen.dart';
 
-class StartPage extends StatelessWidget {
+class StartPage extends GetView<StartPageController> {
   final boundary = 400.0;
 
   Widget buildH1Text(String text) {
@@ -19,8 +20,6 @@ class StartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(StartPageController());
-
     return Scaffold(
         body: Stack(children: [
       SizedBox.expand(
@@ -36,8 +35,8 @@ class StartPage extends StatelessWidget {
                 SizedBox(height: 15),
                 Bouncing(
                     child: Icon(Icons.folder_open, size: 80),
-                    onTap: () {
-                      print("asdasd");
+                    onTap: () async {
+                      Get.find<MediaUtil>().getVideo();
                     })
               ],
             ),
@@ -78,8 +77,6 @@ class StartPage extends StatelessWidget {
                               Uri.parse(link).queryParameters['v'];
                           if (videoCode != null) {
                             Get.to(() => YoutubeDownloadPage(videoCode));
-                          }else{
-
                           }
                         },
                       ),

@@ -1,9 +1,7 @@
-import 'package:dio/dio.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:gallery_saver/gallery_saver.dart';
-import 'package:get/get.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kirinuki/tools/network.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -55,43 +53,5 @@ class YoutubeDownloadPageState extends State<YoutubeDownloadPage> {
     if (status.isDenied) {
       await Permission.storage.request();
     }
-  }
-
-  void showSnackbar(BuildContext context) {
-    final snackBar = SnackBar(
-      content: const Text('Yay! A SnackBar!'),
-      action: SnackBarAction(
-        label: 'Undo',
-        onPressed: () {
-          // Some code to undo the change.
-        },
-      ),
-    );
-
-    // Find the ScaffoldMessenger in the widget tree
-    // and use it to show a SnackBar.
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
-  void downloadVideo(String url) {
-    GallerySaver.saveVideo(url, albumName: _albumName).then((success) {
-      print("video save $success");
-    });
-  }
-
-  Future downloadFile(String url) async {
-    Dio dio = Dio();
-
-    try {
-      var dir = await getExternalStorageDirectory();
-      print(dir!.path);
-      await dio.download(url, "${dir.path}/gura.mp4",
-          onReceiveProgress: (rec, total) {
-        print("Rec: $rec , Total: $total");
-      });
-    } catch (e) {
-      print(e);
-    }
-    print("Download completed");
   }
 }
