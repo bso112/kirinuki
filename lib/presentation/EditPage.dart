@@ -62,20 +62,20 @@ class _EditPageState extends State<EditPage> {
           color: Colors.grey.shade400,
           child: Obx(
             () => ListView.builder(
-                itemCount: controller.subtitleList.length,
+                itemCount: controller.subtitles.length,
                 itemBuilder: (_, index) {
                   return Container(
                       margin: EdgeInsets.all(5),
                       padding: EdgeInsets.all(10),
                       color: Colors.white,
-                      child: _buildSubtitle(controller.subtitleList[index]));
+                      child: _buildSubtitle(controller.subtitles[index]));
                 }),
           ),
         )),
         CupertinoButton(
             child: Text('submit'),
             onPressed: () {
-              SrtGenerator.generate(controller.subtitleList,'sample');
+              SrtGenerator.generate(controller.subtitles,'sample');
             })
       ],
     );
