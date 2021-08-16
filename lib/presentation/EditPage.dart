@@ -5,13 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kirinuki/presentation/EditPageController.dart';
-import 'package:kirinuki/presentation/widget/custom_slider.dart';
-import 'package:kirinuki/route/app_pages.dart';
-import 'package:kirinuki/tools/debouncer.dart';
+import 'package:kirinuki/presentation/widget/fill_track_shape.dart';
+import 'package:kirinuki/tools/srt_generator.dart';
 import 'package:kirinuki/widget/bouncing_icon_button.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:video_player/video_player.dart';
-import 'package:kirinuki/tools/app_ext.dart';
 
 class EditPage extends StatefulWidget {
   @override
@@ -19,59 +15,100 @@ class EditPage extends StatefulWidget {
 }
 
 class _EditPageState extends State<EditPage> {
-  late VideoPlayerController _videoPlayerController;
   late EditPageController controller = Get.find<EditPageController>();
 
   @override
-  void initState() {
+  Widget build(BuildContext context) {
     if (!(Get.arguments is XFile)) {
       Get.back();
-      return;
+      return Container();
     }
     final XFile video = Get.arguments;
-    _videoPlayerController = VideoPlayerController.file(File(video.path));
-    super.initState();
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Container(
-          child: Column(children: [_buildVideoPlayer()]),
+          child: Column(children: [
+            Flexible(flex: 5, child: _buildVideoPlayer(video.path)),
+            Flexible(flex: 6, child: _buildEditor())
+          ]),
         ),
       ),
     );
   }
 
-  Widget _buildVideoPlayer() {
-    double _getCurrentPosition() {
-      return _videoPlayerController.value.position.inMilliseconds /
-          _videoPlayerController.value.duration.inMilliseconds.atLeast(1);
-    }
-
-    _videoPlayerController.position.then((_) {
-      controller.videoPosition.value = _getCurrentPosition();
-    });
-
-    final iconColor = Colors.white;
-    final debouncer100 = Debouncer(delayInMs: 100);
-
+  Widget _buildEditor() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FutureBuilder(
-          future: _videoPlayerController.initialize(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              return AspectRatio(
-                  aspectRatio: _videoPlayerController.value.aspectRatio,
-                  child: VideoPlayer(_videoPlayerController));
-            }
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          },
+        Container(
+          height: 30,
+          margin: EdgeInsets.only(top: 5, left: 10, bottom: 5, right: 10),
+          decoration: BoxDecoration(
+              border: Border.all(width: 2, color: Colors.black),
+              borderRadius: BorderRadius.circular(10)),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 5),
+            child: TextField(
+              decoration: InputDecoration(border: InputBorder.none),
+              onSubmitted: (value) {
+                controller.addSubtitle(value);
+              },
+            ),
+          ),
+        ),
+        Expanded(
+            child: Container(
+          color: Colors.grey.shade400,
+          child: Obx(
+            () => ListView.builder(
+                itemCount: controller.subtitleList.length,
+                itemBuilder: (_, index) {
+                  return Container(
+                      margin: EdgeInsets.all(5),
+                      padding: EdgeInsets.all(10),
+                      color: Colors.white,
+                      child: _buildSubtitle(controller.subtitleList[index]));
+                }),
+          ),
+        )),
+        CupertinoButton(
+            child: Text('submit'),
+            onPressed: () {
+              SrtGenerator.generate(controller.subtitleList,'sample');
+            })
+      ],
+    );
+  }
+
+  Widget _buildSubtitle(Subtitle subtitle) {
+    return GestureDetector(
+      child: Text(subtitle.content),
+      onTap: () {
+        controller.seekTo(subtitle.start);
+      },
+    );
+  }
+
+  Widget _buildVideoPlayer(String videoPath) {
+    final iconColor = Colors.white;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          color: Colors.grey,
+          height: 200,
+          child: FutureBuilder(
+            future: controller.init(videoPath),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                return controller.getVideoPlayer();
+              }
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            },
+          ),
         ),
         Container(
           padding: EdgeInsets.symmetric(vertical: 5),
@@ -80,63 +117,29 @@ class _EditPageState extends State<EditPage> {
             Bouncing(
                 child: Icon(Icons.skip_previous, color: iconColor),
                 onTap: () {
-                  final newPosition =
-                      _videoPlayerController.value.position.inSeconds -
-                          controller.skipInSecond.value;
-                  _videoPlayerController.seekTo(Duration(seconds: newPosition));
-                  print("newPos" + newPosition.toString());
+                  controller.skipNext();
                 }),
             Obx(
               () => Bouncing(
-                  child: controller.isVideoPlaying.value
+                  child: controller.isVideoPlaying
                       ? Icon(Icons.stop, color: iconColor)
                       : Icon(Icons.play_arrow, color: iconColor),
                   onTap: () {
-                    final onControlEnd = (value) {
-                      controller.isVideoPlaying.value =
-                          _videoPlayerController.value.isPlaying;
-                    };
-                    if (_videoPlayerController.value.isPlaying) {
-                      _videoPlayerController.pause().then(onControlEnd);
-                    } else {
-                      _videoPlayerController.play().then(onControlEnd);
-                    }
+                    controller.clickPlay();
                   }),
             ),
             Bouncing(
                 child: Icon(Icons.skip_next, color: iconColor),
                 onTap: () {
-                  final newPosition =
-                      _videoPlayerController.value.position.inSeconds +
-                          controller.skipInSecond.value;
-                  _videoPlayerController.seekTo(Duration(seconds: newPosition));
-                  print("newPos" + newPosition.toString());
+                  controller.skipPrev();
                 }),
           ]),
         ),
         Container(
           height: 20,
-          child: Obx(() => SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              thumbColor: Colors.transparent,
-              thumbShape: SliderComponentShape.noThumb,
-              trackShape: FillTrackShape()
-            ),
-            child: Slider(
-                  value: controller.videoPosition.value,
-                  max: 1,
-                  onChanged: (value) {
-                    debouncer100.run(() {
-                      _videoPlayerController.seekTo(Duration(
-                          milliseconds: (_videoPlayerController
-                                      .value.duration.inMilliseconds *
-                                  value)
-                              .toInt()));
-                    });
-                    controller.videoPosition.value = value;
-                  },
-                ),
-          )),
+          child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(trackShape: FillTrackShape()),
+              child: controller.getVideoPlaySlider()),
         )
       ],
     );

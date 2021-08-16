@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class FillTrackShape extends RectangularSliderTrackShape {
+
   @override
   Rect getPreferredRect({
     required RenderBox parentBox,
@@ -16,4 +17,6 @@ class FillTrackShape extends RectangularSliderTrackShape {
     final double trackWidth = parentBox.size.width;
     return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
   }
+
+
 }
