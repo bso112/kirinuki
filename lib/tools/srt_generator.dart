@@ -35,7 +35,7 @@ abstract class SrtGenerator {
     });
     file.writeAsString(toWrite).then((file) async {
       final result = await File(file.path).readAsString();
-      print('SRT generated : \n$result');
+      print('SRT generated. \ntitle: $fileName \npath: ${file.path} \ncontent: \n$result');
     }).onError((error, stackTrace) {
       print(error);
     });
