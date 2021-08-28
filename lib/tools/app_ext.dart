@@ -26,10 +26,34 @@ extension VideoPlayerControllerExt on VideoPlayerController {
   }
 }
 
-extension ListExt<T> on List<T> {
+extension ListExt<T, R> on List<T> {
   void forEachIndex(void Function(int, T) function) {
     for (int i = 0; i < length; ++i) {
       function(i, this[i]);
     }
+  }
+
+  List<R> mapWithIndex<R>(R Function(int, T) function) {
+    List<R> res = List.empty(growable: true);
+    for (int i = 0; i < length; ++i) {
+      res.add(function(i, this[i]));
+    }
+    return res;
+  }
+}
+
+extension DurationExt on Duration {
+  Duration minus(Duration other) {
+    if (inMilliseconds - other.inMilliseconds < 0) {
+      return Duration(milliseconds: 0);
+    }
+    return this - other;
+  }
+
+  Duration atLeast(Duration min) {
+    if (this < min) {
+      return min;
+    }
+    return this;
   }
 }

@@ -7,6 +7,8 @@ import 'package:get/get.dart';
 import 'package:kirinuki/main.dart';
 import 'package:kirinuki/presentation/EditPageController.dart';
 import 'package:kirinuki/presentation/widget/fill_track_shape.dart';
+import 'package:kirinuki/presentation/widget/follow_touch_widget.dart';
+import 'package:kirinuki/presentation/widget/subtitle_dialog.dart';
 import 'package:kirinuki/tools/srt_generator.dart';
 import 'package:kirinuki/widget/bouncing_icon_button.dart';
 import 'package:kirinuki/tools/app_ext.dart';
@@ -23,6 +25,7 @@ class _EditPageState extends State<EditPage> {
   void initState() {
     super.initState();
   }
+
   @override
   Widget build(BuildContext context) {
     // if (!(Get.arguments is XFile)) {
@@ -46,7 +49,7 @@ class _EditPageState extends State<EditPage> {
     return sliderWidth * controller.slideMagnification.value * subtitleRatio;
   }
 
-  double getSubtitlePosition(double sliderWidth, Subtitle subtitle) {
+  double getSubtitleOffsetLeft(double sliderWidth, Subtitle subtitle) {
     double subtitleRatio =
         subtitle.start.inMilliseconds / controller.videoDuration.inMilliseconds.atLeast(1);
     return sliderWidth * controller.slideMagnification.value * subtitleRatio;
@@ -59,12 +62,33 @@ class _EditPageState extends State<EditPage> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _buildMagnifySlider(),
           _buildSubtitleNavigator(),
           _buildSubtitleBtn(),
           _buildSubtitleList(),
           _buildSubmitBtn()
         ],
       ),
+    );
+  }
+
+  Widget _buildMagnifySlider() {
+    return SizedBox(
+      height: 30,
+      child: SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+              trackShape: FillTrackShape(),
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 0.0)),
+          child: Obx(
+            () => Slider(
+              value: controller.slideMagnification.value,
+              min: 1,
+              max: 5,
+              onChanged: (value) {
+                controller.slideMagnification.value = value;
+              },
+            ),
+          )),
     );
   }
 
@@ -121,30 +145,81 @@ class _EditPageState extends State<EditPage> {
   Widget _buildSubtitleNavigator() {
     return Container(
       color: Colors.pink,
-      height: 30,
-      child: Obx(() =>
-          controller.videoDuration.inMilliseconds != 0 ? _buildSubtitleBlock() : Container()),
+      height: 60,
+      child: Column(
+        children: [
+          Container(
+            height: 30,
+            child: Obx(() =>
+                controller.videoDuration.inMilliseconds != 0 ? _buildSubtitleBlock() : Container()),
+          ),
+          Container(color: Colors.yellow, height: 30)
+        ],
+      ),
     );
   }
 
   Widget _buildSubtitleBlock() {
     return LayoutBuilder(
-      builder: (context, constraint){
+      builder: (context, constraint) {
         return Obx(
-              () => Stack(
-              children: controller.subtitles
-                  .map((element) => Positioned(
-                  left: getSubtitlePosition(constraint.maxWidth, element),
-                  top: 0,
-                  bottom: 0,
-                  child:
-                  Container(color: Colors.blue, width: getSubtitleWidth(constraint.maxWidth, element))))
-                  .toList()),
+          () => Stack(
+            children: controller.subtitles
+                .map((element) => Positioned(
+                    left: getSubtitleOffsetLeft(constraint.maxWidth, element),
+                    top: 0,
+                    bottom: 0,
+                    child: GestureDetector(
+                      onHorizontalDragUpdate: (dragUpdateDetails) {
+                        final ratio = dragUpdateDetails.globalPosition.dx / constraint.maxWidth;
+                        element.moveTo(Duration(
+                            milliseconds:
+                                (controller.getVideoDuration().inMilliseconds * ratio).toInt()));
+                        controller.subtitles.refresh();
+                      },
+                      child: Container(
+                          color: Colors.blue,
+                          width: getSubtitleWidth(constraint.maxWidth, element)),
+                    )))
+                .toList(),
+          ),
         );
       },
-
     );
   }
+
+  // Widget _buildSubtitleBlock2() {
+  //   return Obx(
+  //     () => Stack(
+  //       children: controller.subtitles
+  //           .map((element) => Row(
+  //                 crossAxisAlignment: CrossAxisAlignment.stretch,
+  //                 children: [
+  //                   GestureDetector(
+  //                       child: Container(width: 10, color: Colors.purple),
+  //                       onTap: () {
+  //                         element.start = element.start.minus(Duration(milliseconds: 500));
+  //                       }),
+  //                   LayoutBuilder(
+  //                     builder: (_, constraint) => Positioned(
+  //                         left: getSubtitleOffsetLeft(constraint.maxWidth, element),
+  //                         top: 0,
+  //                         bottom: 0,
+  //                         child: Container(
+  //                             color: Colors.blue,
+  //                             width: getSubtitleWidth(constraint.maxWidth, element) - 20)),
+  //                   ),
+  //                   GestureDetector(
+  //                       child: Container(width: 10, color: Colors.purple),
+  //                       onTap: () {
+  //                         element.end += Duration(milliseconds: 1000);
+  //                       })
+  //                 ],
+  //               ))
+  //           .toList(),
+  //     ),
+  //   );
+  // }
 
   Widget _buildSubtitle(Subtitle subtitle) {
     return GestureDetector(
@@ -206,42 +281,6 @@ class _EditPageState extends State<EditPage> {
               data: SliderTheme.of(context).copyWith(trackShape: FillTrackShape()),
               child: controller.getVideoPlaySlider()),
         )
-      ],
-    );
-  }
-}
-
-class SubtitleDialog extends StatefulWidget {
-  final void Function(String) onConfirm;
-
-  SubtitleDialog(this.onConfirm);
-
-  @override
-  State<StatefulWidget> createState() => _SubtitleDialogState();
-}
-
-class _SubtitleDialogState extends State<SubtitleDialog> {
-  String _subtitle = "";
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text("자막"),
-      content: TextField(
-        decoration: InputDecoration(),
-        onChanged: (str) {
-          _subtitle = str;
-        },
-      ),
-      actions: <Widget>[
-        TextButton(
-            child: const Text("추가"),
-            onPressed: () {
-              if (_subtitle != "") {
-                widget.onConfirm(_subtitle);
-              }
-              Navigator.pop(context);
-            })
       ],
     );
   }

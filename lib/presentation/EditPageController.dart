@@ -17,8 +17,33 @@ import 'package:kirinuki/tools/app_ext.dart';
 
 class Subtitle {
   String content = "";
-  final Duration start;
-  final Duration end;
+  Duration start;
+  Duration end;
+
+  void translate(Duration amount){
+    start += amount;
+    end += amount;
+  }
+  //
+  // void moveTo(Duration position){
+  //   final duration = getLength();
+  //   start = position - duration;
+  //   end = start + duration;
+  // }
+
+
+  void moveTo(Duration position){
+    final duration = getLength();
+    start = Duration(milliseconds: (position.inMilliseconds - duration.inMilliseconds / 2).toInt());
+    end = start + duration;
+  }
+
+
+
+
+  Duration getLength(){
+    return end - start;
+  }
 
   Subtitle({required this.content, required this.start, required this.end});
 }
@@ -28,6 +53,7 @@ class EditPageController extends GetxController {
   var _videoDuration = Duration().obs;
   var _isVideoPlaying = false.obs;
   var slideMagnification = 1.0.obs;
+  var subtitleBlockDragLocalX = 0.0.obs;
   var textStyle = TextStyle(color: Colors.black, fontSize: 30).obs;
 
   static const DEFAULT_SUBTITLE_WIDTH = Duration(seconds: 5);
@@ -45,9 +71,6 @@ class EditPageController extends GetxController {
   Duration get videoDuration => _videoDuration.value;
 
   bool get isVideoPlaying => _isVideoPlaying.value;
-
-
-
 
   late VideoPlayerController _videoPlayerController;
 
@@ -149,9 +172,19 @@ class EditPageController extends GetxController {
     _videoPlayerController.seekTo(subtitles.last.start);
   }
 
+  double getVideoPositionRatio(Duration position) {
+    return position.inMilliseconds /
+        _videoPlayerController.value.duration.inMilliseconds.atLeast(1);
+  }
+
+  Duration getVideoDuration(){
+    return _videoPlayerController.value.duration;
+  }
+
   @override
   void onClose() {
     _videoPlayerController.dispose();
     super.onClose();
   }
+
 }
