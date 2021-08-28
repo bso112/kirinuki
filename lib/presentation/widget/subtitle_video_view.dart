@@ -31,20 +31,20 @@ class SubtitleVideoView extends StatelessWidget {
         _right = right,
         _bottom = bottom;
 
-  void getCurrentSubtitle() {
-    Subtitle? last;
-    _subtitles.forEach((subtitle) {
-      if (subtitle.start < _videoPlayer.controller.value.position) {
-        last = subtitle;
+  String getCurrentSubtitle() {
+    final videoPosition = _videoPlayer.controller.value.position;
+    for (int i = 0; i < _subtitles.length; ++i) {
+      if (_subtitles[i].start < videoPosition && _subtitles[i].end > videoPosition) {
+        return _subtitles[i].content;
       }
-    });
-    currentContent.value = last?.content ?? '';
+    }
+    return "";
   }
 
   @override
   Widget build(BuildContext context) {
     _videoPlayer.controller.addListener(() {
-      getCurrentSubtitle();
+      currentContent.value = getCurrentSubtitle();
     });
 
     return Stack(

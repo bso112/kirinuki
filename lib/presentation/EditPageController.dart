@@ -7,12 +7,7 @@ import 'package:get/get_rx/src/rx_workers/utils/debouncer.dart';
 import 'package:kirinuki/presentation/widget/subtitle_video_view.dart';
 import 'package:kirinuki/widget/srt_parser.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:subtitle_wrapper_package/data/models/style/subtitle_position.dart';
-import 'package:subtitle_wrapper_package/data/models/style/subtitle_style.dart';
-import 'package:subtitle_wrapper_package/subtitle_controller.dart';
-import 'package:subtitle_wrapper_package/subtitle_wrapper_package.dart';
 import 'package:video_player/video_player.dart';
-import 'dart:math';
 import 'package:kirinuki/tools/app_ext.dart';
 
 class Subtitle {
@@ -64,6 +59,7 @@ class EditPageController extends GetxController {
   Rx<double?> subtitleTop = null.obs;
 
   var skipInMs = 1000.obs;
+  //이걸 우선순위큐로 하면 좋은데..
   final subtitles = List<Subtitle>.empty(growable: true).obs;
 
   Duration get videoPosition => _videoPosition.value;
