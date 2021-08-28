@@ -25,6 +25,7 @@ class Subtitle {
 
 class EditPageController extends GetxController {
   var _videoPosition = Duration().obs;
+  var _videoDuration = Duration().obs;
   var _isVideoPlaying = false.obs;
   var slideMagnification = 1.0.obs;
   var textStyle = TextStyle(color: Colors.black, fontSize: 30).obs;
@@ -39,9 +40,14 @@ class EditPageController extends GetxController {
   var skipInMs = 1000.obs;
   final subtitles = List<Subtitle>.empty(growable: true).obs;
 
-  get videoPosition => _videoPosition.value;
+  Duration get videoPosition => _videoPosition.value;
 
-  get isVideoPlaying => _isVideoPlaying.value;
+  Duration get videoDuration => _videoDuration.value;
+
+  bool get isVideoPlaying => _isVideoPlaying.value;
+
+
+
 
   late VideoPlayerController _videoPlayerController;
 
@@ -54,6 +60,7 @@ class EditPageController extends GetxController {
     });
 
     await _videoPlayerController.initialize();
+    _videoDuration.value = _videoPlayerController.value.duration;
 
     final documentPath = await getApplicationDocumentsDirectory();
     final subtitleDir = documentPath.path + '/sample.srt';
@@ -65,6 +72,9 @@ class EditPageController extends GetxController {
         content: content,
         start: _videoPlayerController.value.position,
         end: _videoPlayerController.value.position + DEFAULT_SUBTITLE_WIDTH));
+    subtitles.sort((a, b) {
+      return a.start.compareTo(b.start);
+    });
   }
 
   Widget getVideoPlayer() {
@@ -128,8 +138,15 @@ class EditPageController extends GetxController {
     _videoPlayerController.seekTo(position);
   }
 
-  Duration getVideoDuration() {
-    return _videoPlayerController.value.duration;
+  void seekToIndex(int subtitleIndex) {
+    if (subtitleIndex >= subtitles.length) {
+      return;
+    }
+    _videoPlayerController.seekTo(subtitles[subtitleIndex].start);
+  }
+
+  void seekToLast() {
+    _videoPlayerController.seekTo(subtitles.last.start);
   }
 
   @override

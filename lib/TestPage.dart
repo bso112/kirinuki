@@ -16,35 +16,57 @@ class TestPageState extends State<TestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-          child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            color: Colors.grey,
-            height: 300,
-            child: FutureBuilder(
-                future: videoController.initialize(),
-                builder: (_, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    videoController.play();
-                    return AspectRatio(
-                        aspectRatio: videoController.value.aspectRatio,
-                        child: VideoPlayer(videoController));
-                  }
-                  return Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }),
-          ),
-          TextButton(
-            child: const Text("테스트", style: TextStyle(fontSize: 20)),
-            onPressed: () {
-              showDialog(context: context, builder: (_) => SubtitleDialog((_) {}));
-            },
-          ),
-        ],
-      )),
+      body: Container(color: Colors.red, child: _buildList()),
+    );
+  }
+
+  _buildList(){
+    return  ListView.builder(
+            itemCount: 10,
+            itemBuilder: (_, index) => Container(
+              color: Colors.blue,
+              height: 100,
+              child: Text(
+                "test",
+                style: TextStyle(color: Colors.black),
+              ),
+            ));
+  }
+
+  _buildScroll() {
+    return SingleChildScrollView(
+      child: _buildList()
+    );
+  }
+
+  _buildVideo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          color: Colors.grey,
+          height: 300,
+          child: FutureBuilder(
+              future: videoController.initialize(),
+              builder: (_, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  videoController.play();
+                  return AspectRatio(
+                      aspectRatio: videoController.value.aspectRatio,
+                      child: VideoPlayer(videoController));
+                }
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              }),
+        ),
+        TextButton(
+          child: const Text("테스트", style: TextStyle(fontSize: 20)),
+          onPressed: () {
+            showDialog(context: context, builder: (_) => SubtitleDialog((_) {}));
+          },
+        ),
+      ],
     );
   }
 }
