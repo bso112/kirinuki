@@ -78,7 +78,7 @@ class _EditPageState extends State<EditPage> {
       child: SliderTheme(
           data: SliderTheme.of(context).copyWith(
               trackShape: FillTrackShape(),
-              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 0.0)),
+              thumbShape: RectangularSliderValueIndicatorShape()),
           child: Obx(
             () => Slider(
               value: controller.slideMagnification.value,
@@ -278,7 +278,8 @@ class _EditPageState extends State<EditPage> {
         Container(
           height: 20,
           child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(trackShape: FillTrackShape()),
+              data: SliderTheme.of(context).copyWith(
+                  trackShape: FillTrackShape(), thumbShape: RectangularSliderValueIndicatorShape()),
               child: controller.getVideoPlaySlider()),
         )
       ],
