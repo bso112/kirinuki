@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Flutter Demo',
       getPages: AppPages.pages,
-      initialRoute: Routes.START,
+      initialRoute: Routes.EDIT,
       initialBinding: StartPageBinding(),
       theme: ThemeData(
         primarySwatch: Colors.blue,

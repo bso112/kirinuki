@@ -12,6 +12,8 @@ import 'package:subtitle_wrapper_package/data/models/style/subtitle_style.dart';
 import 'package:subtitle_wrapper_package/subtitle_controller.dart';
 import 'package:subtitle_wrapper_package/subtitle_wrapper_package.dart';
 import 'package:video_player/video_player.dart';
+import 'dart:math';
+import 'package:kirinuki/tools/app_ext.dart';
 
 class Subtitle {
   String content = "";
@@ -24,6 +26,16 @@ class Subtitle {
 class EditPageController extends GetxController {
   var _videoPosition = Duration().obs;
   var _isVideoPlaying = false.obs;
+  var slideMagnification = 1.0.obs;
+  var textStyle = TextStyle(color: Colors.black, fontSize: 30).obs;
+
+  static const DEFAULT_SUBTITLE_WIDTH = Duration(seconds: 5);
+
+  Rx<double?> subtitleLeft = 0.0.obs;
+  Rx<double?> subtitleRight = 0.0.obs;
+  Rx<double?> subtitleBottom = 0.5.obs;
+  Rx<double?> subtitleTop = null.obs;
+
   var skipInMs = 1000.obs;
   final subtitles = List<Subtitle>.empty(growable: true).obs;
 
@@ -34,7 +46,8 @@ class EditPageController extends GetxController {
   late VideoPlayerController _videoPlayerController;
 
   Future<void> init(String videoPath) async {
-    _videoPlayerController = VideoPlayerController.file(File(videoPath));
+    // _videoPlayerController = VideoPlayerController.file(File(videoPath));
+    _videoPlayerController = VideoPlayerController.asset(videoPath);
     _videoPlayerController.addListener(() {
       _videoPosition.value = _videoPlayerController.value.position;
       _isVideoPlaying.value = _videoPlayerController.value.isPlaying;
@@ -44,21 +57,28 @@ class EditPageController extends GetxController {
 
     final documentPath = await getApplicationDocumentsDirectory();
     final subtitleDir = documentPath.path + '/sample.srt';
-    subtitles.value =  SrtParser.parse(await File(subtitleDir).readAsString());
+    subtitles.value = SrtParser.parse(await File(subtitleDir).readAsString());
   }
 
   void addSubtitle(String content) {
     subtitles.add(Subtitle(
         content: content,
         start: _videoPlayerController.value.position,
-        end: _videoPlayerController.value.position));
+        end: _videoPlayerController.value.position + DEFAULT_SUBTITLE_WIDTH));
   }
 
   Widget getVideoPlayer() {
     return AspectRatio(
         aspectRatio: _videoPlayerController.value.aspectRatio,
         child: SubtitleVideoView(
-            videoPlayer: VideoPlayer(_videoPlayerController), subtitles: subtitles));
+          videoPlayer: VideoPlayer(_videoPlayerController),
+          subtitles: subtitles,
+          textStyle: textStyle,
+          left: subtitleLeft,
+          top: subtitleTop,
+          right: subtitleRight,
+          bottom: subtitleBottom,
+        ));
   }
 
   Widget getVideoPlaySlider() {
@@ -85,13 +105,15 @@ class EditPageController extends GetxController {
   }
 
   void skipNext() {
-    final newPos = _videoPlayerController.value.position.inMilliseconds + skipInMs.value;
-    _videoPlayerController.seekTo(Duration(minutes: newPos));
+    var newPos = _videoPlayerController.value.position.inMilliseconds + skipInMs.value;
+    newPos = newPos.clamp(0, _videoPlayerController.value.duration.inMilliseconds);
+    _videoPlayerController.seekTo(Duration(milliseconds: newPos));
   }
 
   void skipPrev() {
-    final newPos = _videoPlayerController.value.position.inMilliseconds - skipInMs.value;
-    _videoPlayerController.seekTo(Duration(minutes: newPos));
+    var newPos = _videoPlayerController.value.position.inMilliseconds - skipInMs.value;
+    newPos = newPos.clamp(0, _videoPlayerController.value.duration.inMilliseconds);
+    _videoPlayerController.seekTo(Duration(milliseconds: newPos));
   }
 
   void clickPlay() {
@@ -104,5 +126,15 @@ class EditPageController extends GetxController {
 
   void seekTo(Duration position) {
     _videoPlayerController.seekTo(position);
+  }
+
+  Duration getVideoDuration() {
+    return _videoPlayerController.value.duration;
+  }
+
+  @override
+  void onClose() {
+    _videoPlayerController.dispose();
+    super.onClose();
   }
 }

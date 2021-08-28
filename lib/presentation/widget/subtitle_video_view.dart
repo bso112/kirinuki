@@ -8,11 +8,28 @@ import '../EditPageController.dart';
 class SubtitleVideoView extends StatelessWidget {
   final VideoPlayer _videoPlayer;
   final RxList<Subtitle> _subtitles;
+  final Rx<TextStyle> _textStyle;
   final currentContent = ''.obs;
+  final Rx<double?> _top;
+  final Rx<double?> _left;
+  final Rx<double?> _right;
+  final Rx<double?> _bottom;
 
-  SubtitleVideoView({required VideoPlayer videoPlayer, required RxList<Subtitle> subtitles})
+  SubtitleVideoView(
+      {required VideoPlayer videoPlayer,
+      required RxList<Subtitle> subtitles,
+      required Rx<TextStyle> textStyle,
+      required Rx<double?> left,
+      required Rx<double?> top,
+      required Rx<double?> right,
+      required Rx<double?> bottom})
       : _videoPlayer = videoPlayer,
-        _subtitles = subtitles;
+        _subtitles = subtitles,
+        _textStyle = textStyle,
+        _left = left,
+        _top = top,
+        _right = right,
+        _bottom = bottom;
 
   void getCurrentSubtitle() {
     Subtitle? last;
@@ -34,13 +51,13 @@ class SubtitleVideoView extends StatelessWidget {
       children: [
         _videoPlayer,
         Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
+            bottom: _bottom.value,
+            left: _left.value,
+            right: _right.value,
+            top: _top.value,
             child: Obx(() => Container(
-                color: Colors.red,
                 child: Text(currentContent.value,
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)))))
+                    textAlign: TextAlign.center, style: _textStyle.value))))
       ],
     );
   }
