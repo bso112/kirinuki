@@ -182,10 +182,11 @@ class _EditPageState extends State<EditPage> {
               bottom: 0,
               child: GestureDetector(
                 onHorizontalDragUpdate: (dragUpdateDetails) {
-                  final ratio = dragUpdateDetails.globalPosition.dx / sliderWidth;
+                  final ratio = dragUpdateDetails.globalPosition.dx / (sliderWidth * controller.slideMagnification.value);
                   element.moveTo(Duration(
                       milliseconds:
                           (controller.getVideoDuration().inMilliseconds * ratio).toInt()));
+
                   controller.subtitles.refresh();
                 },
                 child: Container(color: Colors.blue, width: getSubtitleWidth(sliderWidth, element)),
