@@ -77,8 +77,7 @@ class _EditPageState extends State<EditPage> {
       height: 30,
       child: SliderTheme(
           data: SliderTheme.of(context).copyWith(
-              trackShape: FillTrackShape(),
-              thumbShape: RectangularSliderValueIndicatorShape()),
+              trackShape: FillTrackShape(), thumbShape: RectangularSliderValueIndicatorShape()),
           child: Obx(
             () => Slider(
               value: controller.slideMagnification.value,
@@ -143,48 +142,55 @@ class _EditPageState extends State<EditPage> {
   }
 
   Widget _buildSubtitleNavigator() {
-    return Container(
-      color: Colors.pink,
-      height: 60,
-      child: Column(
-        children: [
-          Container(
-            height: 30,
-            child: Obx(() =>
-                controller.videoDuration.inMilliseconds != 0 ? _buildSubtitleBlock() : Container()),
+    return LayoutBuilder(
+      builder: (_, constraint) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Obx(
+          ()=> Container(
+            padding: EdgeInsets.all(5),
+            color: Colors.black,
+            width: constraint.maxWidth * controller.slideMagnification.value + 300,
+            height: 80,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                    height: 30,
+                    child: controller.videoDuration.inMilliseconds != 0
+                        ? _buildSubtitleBlock(constraint.maxWidth)
+                        : Container()),
+                SizedBox(height: 5),
+                Expanded(
+                  child: Container(
+                      color: Colors.yellow,
+                      width: constraint.maxWidth * controller.slideMagnification.value),
+                )
+              ],
+            ),
           ),
-          Container(color: Colors.yellow, height: 30)
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildSubtitleBlock() {
-    return LayoutBuilder(
-      builder: (context, constraint) {
-        return Obx(
-          () => Stack(
-            children: controller.subtitles
-                .map((element) => Positioned(
-                    left: getSubtitleOffsetLeft(constraint.maxWidth, element),
-                    top: 0,
-                    bottom: 0,
-                    child: GestureDetector(
-                      onHorizontalDragUpdate: (dragUpdateDetails) {
-                        final ratio = dragUpdateDetails.globalPosition.dx / constraint.maxWidth;
-                        element.moveTo(Duration(
-                            milliseconds:
-                                (controller.getVideoDuration().inMilliseconds * ratio).toInt()));
-                        controller.subtitles.refresh();
-                      },
-                      child: Container(
-                          color: Colors.blue,
-                          width: getSubtitleWidth(constraint.maxWidth, element)),
-                    )))
-                .toList(),
-          ),
-        );
-      },
+  Widget _buildSubtitleBlock(double sliderWidth) {
+    return Stack(
+      children: controller.subtitles
+          .map((element) => Positioned(
+              left: getSubtitleOffsetLeft(sliderWidth, element),
+              top: 0,
+              bottom: 0,
+              child: GestureDetector(
+                onHorizontalDragUpdate: (dragUpdateDetails) {
+                  final ratio = dragUpdateDetails.globalPosition.dx / sliderWidth;
+                  element.moveTo(Duration(
+                      milliseconds:
+                          (controller.getVideoDuration().inMilliseconds * ratio).toInt()));
+                  controller.subtitles.refresh();
+                },
+                child: Container(color: Colors.blue, width: getSubtitleWidth(sliderWidth, element)),
+              )))
+          .toList(),
     );
   }
 
