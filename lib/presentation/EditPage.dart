@@ -174,39 +174,49 @@ class _EditPageState extends State<EditPage> {
           });
           return Stack(
             children: [
-              SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  controller: scrollController,
-                  child: Obx(() {
-                    final videoWidth = constraint.maxWidth;
-                    final sliderWidth = videoWidth * controller.slideMagnification.value;
-                    final navigatorWidth = sliderWidth + constraint.maxWidth;
+              NotificationListener<ScrollNotification>(
+                onNotification: (scrollNotification) {
+                  if (scrollNotification is ScrollStartNotification) {
+                    controller.pauseVideo();
+                  } else if (scrollNotification is ScrollEndNotification) {
+                    controller.playVideo();
+                  }
+                  return false;
+                },
+                child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    controller: scrollController,
+                    child: Obx(() {
+                      final videoWidth = constraint.maxWidth;
+                      final sliderWidth = videoWidth * controller.slideMagnification.value;
+                      final navigatorWidth = sliderWidth + constraint.maxWidth;
 
-                    return Container(
-                      padding: EdgeInsets.symmetric(vertical: 5),
-                      color: Colors.black,
-                      width: navigatorWidth,
-                      height: 80,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                              height: 30,
-                              child: controller.videoDuration.inMilliseconds != 0
-                                  ? _buildSubtitleBlock(
-                                      scrollController.offset, sliderWidth, constraint.maxWidth / 2)
-                                  : Container()),
-                          SizedBox(height: 5),
-                          Expanded(
-                            child: Container(
-                                color: Colors.yellow,
-                                width: sliderWidth,
-                                margin: EdgeInsets.only(left: constraint.maxWidth / 2)),
-                          )
-                        ],
-                      ),
-                    );
-                  })),
+                      return Container(
+                        padding: EdgeInsets.symmetric(vertical: 5),
+                        color: Colors.black,
+                        width: navigatorWidth,
+                        height: 80,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                                height: 30,
+                                child: controller.videoDuration.inMilliseconds != 0
+                                    ? _buildSubtitleBlock(scrollController.offset, sliderWidth,
+                                        constraint.maxWidth / 2)
+                                    : Container()),
+                            SizedBox(height: 5),
+                            Expanded(
+                              child: Container(
+                                  color: Colors.yellow,
+                                  width: sliderWidth,
+                                  margin: EdgeInsets.only(left: constraint.maxWidth / 2)),
+                            )
+                          ],
+                        ),
+                      );
+                    })),
+              ),
               Positioned(
                   left: constraint.maxWidth / 2,
                   top: 0,
@@ -232,7 +242,7 @@ class _EditPageState extends State<EditPage> {
               bottom: 0,
               child: GestureDetector(
                 onHorizontalDragUpdate: (dragUpdateDetails) {
-                  //마이너스 타임라인도 인식하나? 확인필요
+                  //TODO : 마이너스 타임라인도 인식하나? 확인필요
                   final ratio =
                       (scrollX + dragUpdateDetails.globalPosition.dx - leftPadding) / (sliderWidth);
                   element.moveTo(Duration(
