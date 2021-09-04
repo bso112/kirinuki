@@ -142,9 +142,11 @@ class _EditPageState extends State<EditPage> {
   }
 
   Widget _buildSubtitleNavigator() {
+    ScrollController scrollController = ScrollController();
     return LayoutBuilder(
       builder: (_, constraint) => SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        controller: scrollController,
         child: Obx(
           ()=> Container(
             padding: EdgeInsets.all(5),
@@ -157,7 +159,7 @@ class _EditPageState extends State<EditPage> {
                 Container(
                     height: 30,
                     child: controller.videoDuration.inMilliseconds != 0
-                        ? _buildSubtitleBlock(constraint.maxWidth)
+                        ? _buildSubtitleBlock(scrollController.offset, constraint.maxWidth)
                         : Container()),
                 SizedBox(height: 5),
                 Expanded(
@@ -173,7 +175,7 @@ class _EditPageState extends State<EditPage> {
     );
   }
 
-  Widget _buildSubtitleBlock(double sliderWidth) {
+  Widget _buildSubtitleBlock(double scrollX, double sliderWidth) {
     return Stack(
       children: controller.subtitles
           .map((element) => Positioned(
@@ -182,7 +184,7 @@ class _EditPageState extends State<EditPage> {
               bottom: 0,
               child: GestureDetector(
                 onHorizontalDragUpdate: (dragUpdateDetails) {
-                  final ratio = dragUpdateDetails.globalPosition.dx / (sliderWidth * controller.slideMagnification.value);
+                  final ratio = (scrollX + dragUpdateDetails.globalPosition.dx) / (sliderWidth * controller.slideMagnification.value);
                   element.moveTo(Duration(
                       milliseconds:
                           (controller.getVideoDuration().inMilliseconds * ratio).toInt()));
