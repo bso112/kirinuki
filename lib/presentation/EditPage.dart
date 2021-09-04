@@ -146,6 +146,7 @@ class _EditPageState extends State<EditPage> {
     ScrollController scrollController = ScrollController();
 
     final debouncer10 = Debouncer(delay: Duration(milliseconds: 10));
+    //네비게이터 스크롤시 비디오 포지션 옮기기
     scrollController.addListener(() {
       if (controller.isVideoPlaying) return;
       debouncer10.call(() {
@@ -159,57 +160,65 @@ class _EditPageState extends State<EditPage> {
         scrollController.dispose();
       },
       child: LayoutBuilder(builder: (_, constraint) {
-        return Stack(
-          children: [
-            SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                controller: scrollController,
-                child: Obx(() {
-                  final videoWidth = constraint.maxWidth;
-                  final sliderWidth = videoWidth * controller.slideMagnification.value;
-                  final navigatorWidth = sliderWidth + constraint.maxWidth;
+        return AppWidgetBuilder(builder: (_) {
+          double newScrollPos() {
+            return controller.getVideoCurrentPositionRatio() *
+                constraint.maxWidth *
+                controller.slideMagnification.value;
+          }
 
-                  ever(controller.videoPositionChanged, (_) {
-                    if (!controller.isVideoPlaying) return;
-                    final newPos = controller.getVideoCurrentPositionRatio() * sliderWidth;
-                    scrollController.jumpTo(newPos);
-                  });
+          //자동스크롤
+          ever(controller.videoPositionChanged, (_) {
+            if (!controller.isVideoPlaying) return;
+            scrollController.jumpTo(newScrollPos());
+          });
+          return Stack(
+            children: [
+              SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  controller: scrollController,
+                  child: Obx(() {
+                    final videoWidth = constraint.maxWidth;
+                    final sliderWidth = videoWidth * controller.slideMagnification.value;
+                    final navigatorWidth = sliderWidth + constraint.maxWidth;
 
-                  return Container(
-                    padding: EdgeInsets.symmetric(vertical: 5),
-                    color: Colors.black,
-                    width: navigatorWidth,
-                    height: 80,
-                    child: Padding(
-                      padding: EdgeInsets.only(left: constraint.maxWidth / 2),
+                    return Container(
+                      padding: EdgeInsets.symmetric(vertical: 5),
+                      color: Colors.black,
+                      width: navigatorWidth,
+                      height: 80,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
                               height: 30,
                               child: controller.videoDuration.inMilliseconds != 0
-                                  ? _buildSubtitleBlock(scrollController.offset, sliderWidth, constraint.maxWidth / 2)
+                                  ? _buildSubtitleBlock(
+                                      scrollController.offset, sliderWidth, constraint.maxWidth / 2)
                                   : Container()),
                           SizedBox(height: 5),
                           Expanded(
-                            child: Container(color: Colors.yellow, width: sliderWidth),
+                            child: Container(
+                                color: Colors.yellow,
+                                width: sliderWidth,
+                                margin: EdgeInsets.only(left: constraint.maxWidth / 2)),
                           )
                         ],
                       ),
-                    ),
-                  );
-                })),
-            Positioned(
-                left: constraint.maxWidth / 2,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  color: Colors.red,
-                  width: 10,
-                  height: constraint.maxHeight,
-                )),
-          ],
-        );
+                    );
+                  })),
+              Positioned(
+                  left: constraint.maxWidth / 2,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    color: Colors.red,
+                    width: 3,
+                    height: constraint.maxHeight,
+                  )),
+            ],
+          );
+        });
       }),
     );
   }
@@ -218,16 +227,17 @@ class _EditPageState extends State<EditPage> {
     return Stack(
       children: controller.subtitles
           .map((element) => Positioned(
-              left: getSubtitleOffsetLeft(sliderWidth, element),
+              left: leftPadding + getSubtitleOffsetLeft(sliderWidth, element),
               top: 0,
               bottom: 0,
               child: GestureDetector(
                 onHorizontalDragUpdate: (dragUpdateDetails) {
-                  final ratio = (scrollX + dragUpdateDetails.globalPosition.dx - leftPadding) / (sliderWidth);
+                  //마이너스 타임라인도 인식하나? 확인필요
+                  final ratio =
+                      (scrollX + dragUpdateDetails.globalPosition.dx - leftPadding) / (sliderWidth);
                   element.moveTo(Duration(
                       milliseconds:
                           (controller.getVideoDuration().inMilliseconds * ratio).toInt()));
-
                   controller.subtitles.refresh();
                 },
                 child: Container(color: Colors.blue, width: getSubtitleWidth(sliderWidth, element)),
