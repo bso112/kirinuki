@@ -62,6 +62,7 @@ class EditPageController extends GetxController {
   //이걸 우선순위큐로 하면 좋은데..
   final subtitles = List<Subtitle>.empty(growable: true).obs;
 
+  Rx<Duration> get videoPositionChanged => _videoPosition;
   Duration get videoPosition => _videoPosition.value;
 
   Duration get videoDuration => _videoDuration.value;
@@ -111,7 +112,7 @@ class EditPageController extends GetxController {
   }
 
   Widget getVideoPlaySlider() {
-    final debouncer100 = Debouncer(delay: Duration(milliseconds: 100));
+    final debouncer10 = Debouncer(delay: Duration(milliseconds: 10));
     return Obx(
       () => Slider(
         value: _videoPosition.value.inMilliseconds.toDouble(),
@@ -124,7 +125,7 @@ class EditPageController extends GetxController {
         },
         onChanged: (value) {
           final newPos = Duration(milliseconds: value.toInt());
-          debouncer100.call(() {
+          debouncer10.call(() {
             _videoPlayerController.seekTo(newPos);
           });
           _videoPosition.value = newPos;
@@ -157,7 +158,7 @@ class EditPageController extends GetxController {
     _videoPlayerController.seekTo(position);
   }
 
-  void seekToIndex(int subtitleIndex) {
+  void seekToSubtitle(int subtitleIndex) {
     if (subtitleIndex >= subtitles.length) {
       return;
     }
@@ -173,8 +174,21 @@ class EditPageController extends GetxController {
         _videoPlayerController.value.duration.inMilliseconds.atLeast(1);
   }
 
+  double getVideoCurrentPositionRatio() {
+    return videoPosition.inMilliseconds /
+        _videoPlayerController.value.duration.inMilliseconds.atLeast(1);
+  }
+
   Duration getVideoDuration(){
     return _videoPlayerController.value.duration;
+  }
+
+  void pauseVideo(){
+    _videoPlayerController.pause();
+  }
+
+  void playVideo(){
+    _videoPlayerController.play();
   }
 
   @override
