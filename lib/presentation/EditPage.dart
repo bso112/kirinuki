@@ -178,8 +178,6 @@ class _EditPageState extends State<EditPage> {
                 onNotification: (scrollNotification) {
                   if (scrollNotification is ScrollStartNotification) {
                     controller.pauseVideo();
-                  } else if (scrollNotification is ScrollEndNotification) {
-                    controller.playVideo();
                   }
                   return false;
                 },
