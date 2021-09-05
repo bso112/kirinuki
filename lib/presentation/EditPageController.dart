@@ -12,13 +12,18 @@ import 'package:kirinuki/tools/app_ext.dart';
 
 class Subtitle {
   String content = "";
-  Duration start;
-  Duration end;
+  Duration _start;
+  Duration _end;
 
-  void translate(Duration amount){
-    start += amount;
-    end += amount;
+  Duration get start => _start;
+
+  Duration get end => _end;
+
+  void translate(Duration amount) {
+    _start += amount;
+    _end += amount;
   }
+
   //
   // void moveTo(Duration position){
   //   final duration = getLength();
@@ -26,21 +31,34 @@ class Subtitle {
   //   end = start + duration;
   // }
 
-
-  void moveTo(Duration position){
+  void moveTo(Duration position) {
     final duration = getLength();
-    start = Duration(milliseconds: (position.inMilliseconds - duration.inMilliseconds / 2).toInt());
-    end = start + duration;
+    _start =
+        Duration(milliseconds: (position.inMilliseconds - duration.inMilliseconds / 2).toInt());
+    _end = start + duration;
   }
 
-
-
-
-  Duration getLength(){
+  Duration getLength() {
     return end - start;
   }
 
-  Subtitle({required this.content, required this.start, required this.end});
+  void moveStartTo(Duration position){
+    _start = position;
+    if(_start > _end){
+      _start = _end;
+    }
+  }
+
+  void moveEndTo(Duration position){
+    _end = position;
+    if(_end < _start){
+      _end = _start;
+    }
+  }
+
+  Subtitle({required this.content, required start, required end})
+      : _start = start,
+        _end = end;
 }
 
 class EditPageController extends GetxController {
@@ -59,10 +77,12 @@ class EditPageController extends GetxController {
   Rx<double?> subtitleTop = null.obs;
 
   var skipInMs = 1000.obs;
+
   //이걸 우선순위큐로 하면 좋은데..
   final subtitles = List<Subtitle>.empty(growable: true).obs;
 
   Rx<Duration> get videoPositionChanged => _videoPosition;
+
   Duration get videoPosition => _videoPosition.value;
 
   Duration get videoDuration => _videoDuration.value;
@@ -179,15 +199,11 @@ class EditPageController extends GetxController {
         _videoPlayerController.value.duration.inMilliseconds.atLeast(1);
   }
 
-  Duration getVideoDuration(){
-    return _videoPlayerController.value.duration;
-  }
-
-  void pauseVideo(){
+  void pauseVideo() {
     _videoPlayerController.pause();
   }
 
-  void playVideo(){
+  void playVideo() {
     _videoPlayerController.play();
   }
 
@@ -196,5 +212,4 @@ class EditPageController extends GetxController {
     _videoPlayerController.dispose();
     super.onClose();
   }
-
 }

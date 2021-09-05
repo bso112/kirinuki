@@ -148,6 +148,9 @@ class _EditPageState extends State<EditPage> {
     final debouncer10 = Debouncer(delay: Duration(milliseconds: 10));
     //네비게이터 스크롤시 비디오 포지션 옮기기
     scrollController.addListener(() {
+      print("스크롤 : ${scrollController.position.pixels}");
+      print("맥스 : ${scrollController.position.maxScrollExtent}");
+      print("민 : ${scrollController.position.minScrollExtent}");
       if (controller.isVideoPlaying) return;
       debouncer10.call(() {
         final ratio = scrollController.offset / scrollController.position.maxScrollExtent;
@@ -177,7 +180,7 @@ class _EditPageState extends State<EditPage> {
               NotificationListener<ScrollNotification>(
                 onNotification: (scrollNotification) {
                   if (scrollNotification is ScrollStartNotification) {
-                    controller.pauseVideo();
+                    //controller.pauseVideo();
                   }
                   return false;
                 },
@@ -231,24 +234,61 @@ class _EditPageState extends State<EditPage> {
     );
   }
 
+  /// scrollX : 0 ~ sliderWidth
+  /// sliderWitdh : 동영상바 길이
+  /// leftPadding : 화면 너비의 절반
   Widget _buildSubtitleBlock(double scrollX, double sliderWidth, double leftPadding) {
+    double getSliderGlobalPositionRatio(DragUpdateDetails detail) {
+      return (scrollX + detail.globalPosition.dx - leftPadding) / sliderWidth;
+    }
+
+    //자막 블록 양 옆의 핸들 넓이
+    final handleWidth = 5.0;
     return Stack(
       children: controller.subtitles
           .map((element) => Positioned(
               left: leftPadding + getSubtitleOffsetLeft(sliderWidth, element),
               top: 0,
               bottom: 0,
-              child: GestureDetector(
-                onHorizontalDragUpdate: (dragUpdateDetails) {
-                  //TODO : 마이너스 타임라인도 인식하나? 확인필요
-                  final ratio =
-                      (scrollX + dragUpdateDetails.globalPosition.dx - leftPadding) / (sliderWidth);
-                  element.moveTo(Duration(
-                      milliseconds:
-                          (controller.getVideoDuration().inMilliseconds * ratio).toInt()));
-                  controller.subtitles.refresh();
-                },
-                child: Container(color: Colors.blue, width: getSubtitleWidth(sliderWidth, element)),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onHorizontalDragUpdate: (detail) {
+                      final ratio = getSliderGlobalPositionRatio(detail);
+                      print("start : $ratio");
+                      element.moveStartTo(controller.videoDuration * ratio);
+                      controller.subtitles.refresh();
+                    },
+                    child: Container(
+                      color: Colors.red,
+                      width: handleWidth,
+                    ),
+                  ),
+                  GestureDetector(
+                    onHorizontalDragUpdate: (dragUpdateDetails) {
+                      //TODO : 마이너스 타임라인도 인식하나? 확인필요
+                      final ratio = getSliderGlobalPositionRatio(dragUpdateDetails);
+                      element.moveTo(Duration(
+                          milliseconds: (controller.videoDuration.inMilliseconds * ratio).toInt()));
+                      controller.subtitles.refresh();
+                    },
+                    child: Container(
+                        color: Colors.blue,
+                        width:
+                            (getSubtitleWidth(sliderWidth, element) - handleWidth * 2).atLeast(0)),
+                  ),
+                  GestureDetector(
+                    onHorizontalDragUpdate: (detail) {
+                      final ratio = getSliderGlobalPositionRatio(detail);
+                       element.moveEndTo(controller.videoDuration * ratio);
+                       controller.subtitles.refresh();
+                    },
+                    child: Container(
+                      color: Colors.red,
+                      width: handleWidth,
+                    ),
+                  ),
+                ],
               )))
           .toList(),
     );
