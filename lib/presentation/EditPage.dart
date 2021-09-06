@@ -5,17 +5,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_rx/src/rx_workers/utils/debouncer.dart';
-import 'package:kirinuki/main.dart';
 import 'package:kirinuki/presentation/EditPageController.dart';
 import 'package:kirinuki/presentation/widget/fill_track_shape.dart';
-import 'package:kirinuki/presentation/widget/follow_touch_widget.dart';
 import 'package:kirinuki/presentation/widget/subtitle_dialog.dart';
 import 'package:kirinuki/tools/lifecycle_callback.dart';
 import 'package:kirinuki/tools/srt_generator.dart';
 import 'package:kirinuki/widget/bouncing_icon_button.dart';
 import 'package:kirinuki/tools/app_ext.dart';
 import 'package:kirinuki/widget/widget_builder.dart';
-import 'package:kirinuki/widget/widget_swapper.dart';
 
 class EditPage extends StatefulWidget {
   @override
@@ -46,19 +43,6 @@ class _EditPageState extends State<EditPage> {
     );
   }
 
-  double getSubtitleWidth(double sliderWidth, Subtitle subtitle) {
-    double subtitleRatio =
-        (subtitle.end.inMilliseconds.toDouble() - subtitle.start.inMilliseconds.toDouble()) /
-            controller.videoDuration.inMilliseconds.atLeast(1);
-    return sliderWidth * subtitleRatio;
-  }
-
-  double getSubtitleOffsetLeft(double sliderWidth, Subtitle subtitle) {
-    double subtitleRatio =
-        subtitle.start.inMilliseconds / controller.videoDuration.inMilliseconds.atLeast(1);
-    return sliderWidth * subtitleRatio;
-  }
-
   Widget _buildEditor() {
     return Container(
       color: Colors.grey,
@@ -80,14 +64,15 @@ class _EditPageState extends State<EditPage> {
     return SizedBox(
       height: 30,
       child: Obx(
-        () => Slider.adaptive(
-          value: controller.slideMagnification.value,
-          min: 1,
-          max: 5,
-          onChanged: (value) {
-            controller.slideMagnification.value = value;
-          },
-        ),
+            () =>
+            Slider.adaptive(
+              value: controller.slideMagnification.value,
+              min: 1,
+              max: 5,
+              onChanged: (value) {
+                controller.slideMagnification.value = value;
+              },
+            ),
       ),
     );
   }
@@ -109,17 +94,18 @@ class _EditPageState extends State<EditPage> {
       child: Container(
         color: Colors.blue,
         child: Obx(
-          () => ListView.builder(
-              itemCount: controller.subtitles.length,
-              padding: EdgeInsets.only(top: 0),
-              shrinkWrap: true,
-              itemBuilder: (_, index) {
-                return Container(
-                    margin: EdgeInsets.all(5),
-                    padding: EdgeInsets.all(10),
-                    color: Colors.white,
-                    child: _buildSubtitle(controller.subtitles[index]));
-              }),
+              () =>
+              ListView.builder(
+                  itemCount: controller.subtitles.length,
+                  padding: EdgeInsets.only(top: 0),
+                  shrinkWrap: true,
+                  itemBuilder: (_, index) {
+                    return Container(
+                        margin: EdgeInsets.all(5),
+                        padding: EdgeInsets.all(10),
+                        color: Colors.white,
+                        child: _buildSubtitle(controller.subtitles[index]));
+                  }),
         ),
       ),
     );
@@ -134,7 +120,8 @@ class _EditPageState extends State<EditPage> {
         onPressed: () {
           showDialog(
               context: context,
-              builder: (_) => SubtitleDialog((subtitle) {
+              builder: (_) =>
+                  SubtitleDialog((subtitle) {
                     controller.addSubtitle(subtitle);
                   }));
         },
@@ -148,9 +135,6 @@ class _EditPageState extends State<EditPage> {
     final debouncer10 = Debouncer(delay: Duration(milliseconds: 10));
     //네비게이터 스크롤시 비디오 포지션 옮기기
     scrollController.addListener(() {
-      print("스크롤 : ${scrollController.position.pixels}");
-      print("맥스 : ${scrollController.position.maxScrollExtent}");
-      print("민 : ${scrollController.position.minScrollExtent}");
       if (controller.isVideoPlaying) return;
       debouncer10.call(() {
         final ratio = scrollController.offset / scrollController.position.maxScrollExtent;
@@ -164,17 +148,26 @@ class _EditPageState extends State<EditPage> {
       },
       child: LayoutBuilder(builder: (_, constraint) {
         return AppWidgetBuilder(builder: (_) {
+          final leftPadding = constraint.maxWidth / 2;
+
           double newScrollPos() {
             return controller.getVideoCurrentPositionRatio() *
                 constraint.maxWidth *
                 controller.slideMagnification.value;
           }
 
-          //자동스크롤
+
+          //자동 스크롤
           ever(controller.videoPositionChanged, (_) {
             if (!controller.isVideoPlaying) return;
             scrollController.jumpTo(newScrollPos());
           });
+
+          ever(controller.slideMagnification, (_){
+            scrollController.jumpTo(newScrollPos());
+          });
+
+
           return Stack(
             children: [
               NotificationListener<ScrollNotification>(
@@ -204,14 +197,14 @@ class _EditPageState extends State<EditPage> {
                                 height: 30,
                                 child: controller.videoDuration.inMilliseconds != 0
                                     ? _buildSubtitleBlock(scrollController.offset, sliderWidth,
-                                        constraint.maxWidth / 2)
+                                    leftPadding)
                                     : Container()),
                             SizedBox(height: 5),
                             Expanded(
                               child: Container(
                                   color: Colors.yellow,
                                   width: sliderWidth,
-                                  margin: EdgeInsets.only(left: constraint.maxWidth / 2)),
+                                  margin: EdgeInsets.only(left: leftPadding)),
                             )
                           ],
                         ),
@@ -238,25 +231,42 @@ class _EditPageState extends State<EditPage> {
   /// sliderWitdh : 동영상바 길이
   /// leftPadding : 화면 너비의 절반
   Widget _buildSubtitleBlock(double scrollX, double sliderWidth, double leftPadding) {
-    double getSliderGlobalPositionRatio(DragUpdateDetails detail) {
-      return (scrollX + detail.globalPosition.dx - leftPadding) / sliderWidth;
+    double getDragPosition(DragUpdateDetails detail) {
+      return scrollX + detail.globalPosition.dx - leftPadding;
     }
+
+    double getDragPositionRatio(DragUpdateDetails detail) {
+      return getDragPosition(detail) / sliderWidth;
+    }
+
+    double getSubtitleWidth(Subtitle subtitle) {
+      double subtitleRatio =
+          (subtitle.end.inMilliseconds.toDouble() - subtitle.start.inMilliseconds.toDouble()) /
+              controller.videoDuration.inMilliseconds.atLeast(1);
+      return sliderWidth * subtitleRatio;
+    }
+
+    double getSubtitleOffsetLeftInGlobal(Subtitle subtitle) {
+      double subtitleRatio =
+          subtitle.start.inMilliseconds / controller.videoDuration.inMilliseconds.atLeast(1);
+      return leftPadding + sliderWidth * subtitleRatio;
+    }
+
 
     //자막 블록 양 옆의 핸들 넓이
     final handleWidth = 5.0;
     return Stack(
       children: controller.subtitles
-          .map((element) => Positioned(
-              left: leftPadding + getSubtitleOffsetLeft(sliderWidth, element),
+          .map((element) =>
+          Positioned(
+              left: getSubtitleOffsetLeftInGlobal(element),
               top: 0,
               bottom: 0,
               child: Row(
                 children: [
                   GestureDetector(
                     onHorizontalDragUpdate: (detail) {
-                      final ratio = getSliderGlobalPositionRatio(detail);
-                      print("start : $ratio");
-                      element.moveStartTo(controller.videoDuration * ratio);
+                      element.moveStartTo(controller.videoDuration * getDragPositionRatio(detail));
                       controller.subtitles.refresh();
                     },
                     child: Container(
@@ -265,23 +275,22 @@ class _EditPageState extends State<EditPage> {
                     ),
                   ),
                   GestureDetector(
-                    onHorizontalDragUpdate: (dragUpdateDetails) {
+                    onHorizontalDragUpdate: (detail) {
                       //TODO : 마이너스 타임라인도 인식하나? 확인필요
-                      final ratio = getSliderGlobalPositionRatio(dragUpdateDetails);
                       element.moveTo(Duration(
-                          milliseconds: (controller.videoDuration.inMilliseconds * ratio).toInt()));
+                          milliseconds: (controller.videoDuration.inMilliseconds *
+                              getDragPositionRatio(detail))
+                              .toInt()));
                       controller.subtitles.refresh();
                     },
                     child: Container(
                         color: Colors.blue,
-                        width:
-                            (getSubtitleWidth(sliderWidth, element) - handleWidth * 2).atLeast(0)),
+                        width: (getSubtitleWidth(element) - handleWidth * 2).atLeast(0)),
                   ),
                   GestureDetector(
                     onHorizontalDragUpdate: (detail) {
-                      final ratio = getSliderGlobalPositionRatio(detail);
-                       element.moveEndTo(controller.videoDuration * ratio);
-                       controller.subtitles.refresh();
+                      element.moveEndTo(controller.videoDuration * getDragPositionRatio(detail));
+                      controller.subtitles.refresh();
                     },
                     child: Container(
                       color: Colors.red,
@@ -366,13 +375,14 @@ class _EditPageState extends State<EditPage> {
                   controller.skipNext();
                 }),
             Obx(
-              () => Bouncing(
-                  child: controller.isVideoPlaying
-                      ? Icon(Icons.stop, color: iconColor)
-                      : Icon(Icons.play_arrow, color: iconColor),
-                  onTap: () {
-                    controller.clickPlay();
-                  }),
+                  () =>
+                  Bouncing(
+                      child: controller.isVideoPlaying
+                          ? Icon(Icons.stop, color: iconColor)
+                          : Icon(Icons.play_arrow, color: iconColor),
+                      onTap: () {
+                        controller.clickPlay();
+                      }),
             ),
             Bouncing(
                 child: Icon(Icons.skip_next, color: iconColor),
