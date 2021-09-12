@@ -11,13 +11,25 @@ import 'package:video_player/video_player.dart';
 import 'package:kirinuki/tools/app_ext.dart';
 
 class Subtitle {
-  String content = "";
+  var _content = "".obs;
   Duration _start;
   Duration _end;
+
+  Subtitle({required String content, required start, required end})
+      : _start = start,
+        _end = end {
+    _content.value = content;
+  }
+
+  String get content => _content.value;
 
   Duration get start => _start;
 
   Duration get end => _end;
+
+  void setContent(String str) {
+    _content.value = str;
+  }
 
   void translate(Duration amount) {
     _start += amount;
@@ -42,23 +54,19 @@ class Subtitle {
     return end - start;
   }
 
-  void moveStartTo(Duration position){
+  void moveStartTo(Duration position) {
     _start = position;
-    if(_start > _end){
+    if (_start > _end) {
       _start = _end;
     }
   }
 
-  void moveEndTo(Duration position){
+  void moveEndTo(Duration position) {
     _end = position;
-    if(_end < _start){
+    if (_end < _start) {
       _end = _start;
     }
   }
-
-  Subtitle({required this.content, required start, required end})
-      : _start = start,
-        _end = end;
 }
 
 class EditPageController extends GetxController {
@@ -68,6 +76,8 @@ class EditPageController extends GetxController {
   var slideMagnification = 1.0.obs;
   var subtitleBlockDragLocalX = 0.0.obs;
   var textStyle = TextStyle(color: Colors.black, fontSize: 30).obs;
+  var isSubtitleEditMode = false.obs;
+  final selectedSubtitles = Set<Subtitle>().obs;
 
   static const DEFAULT_SUBTITLE_WIDTH = Duration(seconds: 5);
 

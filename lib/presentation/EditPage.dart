@@ -54,7 +54,9 @@ class _EditPageState extends State<EditPage> {
           _buildEditNavigator(),
           _buildSubtitleBtn(),
           _buildSubtitleList(),
-          _buildSubmitBtn()
+          Obx(() => controller.isSubtitleEditMode.value
+              ? _buildSubtitleDeleteButton()
+              : _buildSubmitBtn())
         ],
       ),
     );
@@ -64,23 +66,36 @@ class _EditPageState extends State<EditPage> {
     return SizedBox(
       height: 30,
       child: Obx(
-            () =>
-            Slider.adaptive(
-              value: controller.slideMagnification.value,
-              min: 1,
-              max: 5,
-              onChanged: (value) {
-                controller.slideMagnification.value = value;
-              },
-            ),
+        () => Slider.adaptive(
+          value: controller.slideMagnification.value,
+          min: 1,
+          max: 5,
+          onChanged: (value) {
+            controller.slideMagnification.value = value;
+          },
+        ),
       ),
     );
+  }
+
+  CupertinoButton _buildSubtitleDeleteButton() {
+    return CupertinoButton(
+        child: Text(
+          '삭제하기',
+          style: TextStyle(color: Colors.white),
+        ),
+        color: Colors.red,
+        onPressed: () {
+          controller.subtitles
+              .removeWhere((element) => controller.selectedSubtitles.contains(element));
+          controller.isSubtitleEditMode.value = false;
+        });
   }
 
   CupertinoButton _buildSubmitBtn() {
     return CupertinoButton(
         child: Text(
-          'submit',
+          '.srt 로 내보내기',
           style: TextStyle(color: Colors.black),
         ),
         color: Colors.white,
@@ -94,18 +109,17 @@ class _EditPageState extends State<EditPage> {
       child: Container(
         color: Colors.blue,
         child: Obx(
-              () =>
-              ListView.builder(
-                  itemCount: controller.subtitles.length,
-                  padding: EdgeInsets.only(top: 0),
-                  shrinkWrap: true,
-                  itemBuilder: (_, index) {
-                    return Container(
-                        margin: EdgeInsets.all(5),
-                        padding: EdgeInsets.all(10),
-                        color: Colors.white,
-                        child: _buildSubtitle(controller.subtitles[index]));
-                  }),
+          () => ListView.builder(
+              itemCount: controller.subtitles.length,
+              padding: EdgeInsets.only(top: 0),
+              shrinkWrap: true,
+              itemBuilder: (_, index) {
+                return Container(
+                    margin: EdgeInsets.all(5),
+                    padding: EdgeInsets.all(10),
+                    color: Colors.white,
+                    child: _buildSubtitle(controller.subtitles[index]));
+              }),
         ),
       ),
     );
@@ -120,8 +134,7 @@ class _EditPageState extends State<EditPage> {
         onPressed: () {
           showDialog(
               context: context,
-              builder: (_) =>
-                  SubtitleDialog((subtitle) {
+              builder: (_) => SubtitleDialog((subtitle) {
                     controller.addSubtitle(subtitle);
                   }));
         },
@@ -156,17 +169,15 @@ class _EditPageState extends State<EditPage> {
                 controller.slideMagnification.value;
           }
 
-
           //자동 스크롤
           ever(controller.videoPositionChanged, (_) {
-            if (!controller.isVideoPlaying) return;
+            // if (!controller.isVideoPlaying) return;
             scrollController.jumpTo(newScrollPos());
           });
 
-          ever(controller.slideMagnification, (_){
+          ever(controller.slideMagnification, (_) {
             scrollController.jumpTo(newScrollPos());
           });
-
 
           return Stack(
             children: [
@@ -196,8 +207,8 @@ class _EditPageState extends State<EditPage> {
                             Container(
                                 height: 30,
                                 child: controller.videoDuration.inMilliseconds != 0
-                                    ? _buildSubtitleBlock(scrollController.offset, sliderWidth,
-                                    leftPadding)
+                                    ? _buildSubtitleBlock(
+                                        scrollController.offset, sliderWidth, leftPadding)
                                     : Container()),
                             SizedBox(height: 5),
                             Expanded(
@@ -252,13 +263,11 @@ class _EditPageState extends State<EditPage> {
       return leftPadding + sliderWidth * subtitleRatio;
     }
 
-
     //자막 블록 양 옆의 핸들 넓이
     final handleWidth = 5.0;
     return Stack(
       children: controller.subtitles
-          .map((element) =>
-          Positioned(
+          .map((element) => Positioned(
               left: getSubtitleOffsetLeftInGlobal(element),
               top: 0,
               bottom: 0,
@@ -275,18 +284,19 @@ class _EditPageState extends State<EditPage> {
                     ),
                   ),
                   GestureDetector(
-                    onHorizontalDragUpdate: (detail) {
-                      //TODO : 마이너스 타임라인도 인식하나? 확인필요
-                      element.moveTo(Duration(
-                          milliseconds: (controller.videoDuration.inMilliseconds *
-                              getDragPositionRatio(detail))
-                              .toInt()));
-                      controller.subtitles.refresh();
-                    },
-                    child: Container(
-                        color: Colors.blue,
-                        width: (getSubtitleWidth(element) - handleWidth * 2).atLeast(0)),
-                  ),
+                      onHorizontalDragUpdate: (detail) {
+                        //TODO : 마이너스 타임라인도 인식하나? 확인필요
+                        element.moveTo(Duration(
+                            milliseconds: (controller.videoDuration.inMilliseconds *
+                                    getDragPositionRatio(detail))
+                                .toInt()));
+                        controller.subtitles.refresh();
+                      },
+                      child: Container(
+                          color: Colors.blue,
+                          width: (getSubtitleWidth(element) - handleWidth * 2).atLeast(0),
+                          height: double.infinity,
+                          child: Center(child: Text(element.content, maxLines: 1)))),
                   GestureDetector(
                     onHorizontalDragUpdate: (detail) {
                       element.moveEndTo(controller.videoDuration * getDragPositionRatio(detail));
@@ -303,45 +313,49 @@ class _EditPageState extends State<EditPage> {
     );
   }
 
-  // Widget _buildSubtitleBlock2() {
-  //   return Obx(
-  //     () => Stack(
-  //       children: controller.subtitles
-  //           .map((element) => Row(
-  //                 crossAxisAlignment: CrossAxisAlignment.stretch,
-  //                 children: [
-  //                   GestureDetector(
-  //                       child: Container(width: 10, color: Colors.purple),
-  //                       onTap: () {
-  //                         element.start = element.start.minus(Duration(milliseconds: 500));
-  //                       }),
-  //                   LayoutBuilder(
-  //                     builder: (_, constraint) => Positioned(
-  //                         left: getSubtitleOffsetLeft(constraint.maxWidth, element),
-  //                         top: 0,
-  //                         bottom: 0,
-  //                         child: Container(
-  //                             color: Colors.blue,
-  //                             width: getSubtitleWidth(constraint.maxWidth, element) - 20)),
-  //                   ),
-  //                   GestureDetector(
-  //                       child: Container(width: 10, color: Colors.purple),
-  //                       onTap: () {
-  //                         element.end += Duration(milliseconds: 1000);
-  //                       })
-  //                 ],
-  //               ))
-  //           .toList(),
-  //     ),
-  //   );
-  // }
-
   Widget _buildSubtitle(Subtitle subtitle) {
-    return GestureDetector(
-      child: Text(subtitle.content),
-      onTap: () {
-        controller.seekTo(subtitle.start);
+    TextEditingController textFieldController = TextEditingController(text: subtitle.content);
+    return LifecycleCallback(
+      onDispose: () {
+        textFieldController.dispose();
       },
+      child: Obx(
+        () => GestureDetector(
+          child: Stack(
+            children: [
+              TextField(
+                enabled: controller.isSubtitleEditMode.value,
+                controller: textFieldController,
+                onChanged: (value) {
+                  subtitle.setContent(value);
+                },
+              ),
+              controller.isSubtitleEditMode.value
+                  ? Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Checkbox(
+                        value: controller.selectedSubtitles.contains(subtitle),
+                        onChanged: (isChecked) {
+                          if (isChecked.toSafe()) {
+                            controller.selectedSubtitles.add(subtitle);
+                          } else {
+                            controller.selectedSubtitles.remove(subtitle);
+                          }
+                        },
+                      ))
+                  : Container()
+            ],
+          ),
+          onTap: () {
+            controller.seekTo(subtitle.start);
+          },
+          onLongPress: () {
+            controller.isSubtitleEditMode.value = true;
+          },
+        ),
+      ),
     );
   }
 
@@ -375,14 +389,13 @@ class _EditPageState extends State<EditPage> {
                   controller.skipNext();
                 }),
             Obx(
-                  () =>
-                  Bouncing(
-                      child: controller.isVideoPlaying
-                          ? Icon(Icons.stop, color: iconColor)
-                          : Icon(Icons.play_arrow, color: iconColor),
-                      onTap: () {
-                        controller.clickPlay();
-                      }),
+              () => Bouncing(
+                  child: controller.isVideoPlaying
+                      ? Icon(Icons.stop, color: iconColor)
+                      : Icon(Icons.play_arrow, color: iconColor),
+                  onTap: () {
+                    controller.clickPlay();
+                  }),
             ),
             Bouncing(
                 child: Icon(Icons.skip_next, color: iconColor),

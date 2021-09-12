@@ -8,6 +8,12 @@ extension StringExt on String {
   }
 }
 
+extension BooleanExt on bool? {
+  bool toSafe(){
+    return this ?? false;
+  }
+}
+
 extension DoubleExt on double {
   double atLeast(double num) {
     return max(this, num);
